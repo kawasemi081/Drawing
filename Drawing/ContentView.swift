@@ -11,15 +11,24 @@ import SwiftUI
 struct ContentView: View {
 
     var body: some View {
-        Arc(startAngle: .degrees(0), endAngle: .degrees(110), clockwise: true)
-        .stroke(Color.blue, lineWidth: 10)
-        .frame(width: 300, height: 300)
-//        Triangle()
-//        /// - Note: Shapes also support the same StrokeStyle parameter for creating more advanced strokes
-//        .stroke(Color.red, style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round))
-////        .fill(Color.red)
-//        .frame(width: 300, height: 300)
+        Circle()
+        /// - Note: This is what SwiftUI is doing for us, but where our shapes go to the edge of the screen it means the outside part of the border ends up beyond our screen edges.
+        /// That changes stroke() to strokeBorder() and now we get a better result: all our border is visible, because Swift strokes the inside of the circle rather than centering on the line.
+        .strokeBorder(Color.blue, lineWidth: 40)
+        /// Take a close look at the left and right edges of the border – do you notice how they are cut off?
+//        Circle().stroke(Color.blue, lineWidth: 40)
     }
+
+//    var body: some View {
+//        Arc(startAngle: .degrees(0), endAngle: .degrees(110), clockwise: true)
+//        .stroke(Color.blue, lineWidth: 10)
+//        .frame(width: 300, height: 300)
+////        Triangle()
+////        /// - Note: Shapes also support the same StrokeStyle parameter for creating more advanced strokes
+////        .stroke(Color.red, style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round))
+//////        .fill(Color.red)
+////        .frame(width: 300, height: 300)
+//    }
 
 //    var body: some View {
 //        /// - Note: Paths have lots of methods for creating shapes with squares, circles, arcs, and lines. For our triangle we need to move to a stating position, then add three lines like this
@@ -69,10 +78,28 @@ struct Triangle: Shape {
 
  To demonstrate this, we could create an Arc shape that accepts three parameters: start angle, end angle, and whether to draw the arc clockwise or not. This might seem simple enough, particularly because Path has an addArc() method, but as you’ll see it has a couple of interesting quirks.
  */
-struct Arc: Shape {
+//struct Arc: Shape {
+
+/// - Note: With that change we can now make Arc conform to InsettableShape
+struct Arc: InsettableShape {
     var startAngle: Angle
     var endAngle: Angle
     var clockwise: Bool
+
+    /**
+     There is a small but important difference between SwiftUI’s Circle and our Arc: both conform to the Shape protocol, but Circle also conforms to a second protocol called InsettableShape. This is a shape that can be inset – reduced inwards – by a certain amount to produce another shape. The inset shape it produces can be any other kind of insettable shape, but realistically it should be the same shape just in a smaller rectangle.
+
+     To make Arc conform to InsettableShape we need to add one extra method to it: inset(by:). This will be given the inset amount (half the line width of our stroke), and should return a new kind of insettable shape – in our instance that means we should create an inset arc. The problem is, we don’t know the arc’s actual size, because path(in:) hasn’t been called yet.
+
+     It turns out the solution is pretty simple: if we give our Arc shape a new insetAmount property that defaults to 0, we can just add to that whenever inset(by:) is called. Adding to the inset allows us to call inset(by:) multiple times if needed, for example if we wanted to call it once by hand then use strokeBorder().
+     */
+    var insetAmount: CGFloat = 0
+
+    func inset(by amount: CGFloat) -> some InsettableShape {
+        var arc = self
+        arc.insetAmount += amount
+        return arc
+    }
 
     /**
     If you look at the preview of our arc, chances are it looks nothing like you expect. We asked for an arc from 0 degrees to 110 degrees with a clockwise rotation, but we appear to have been given an arc from 90 degrees to 200 degrees with a counterclockwise rotation.
@@ -89,7 +116,9 @@ struct Arc: Shape {
         let modifiedEnd = endAngle - rotationAdjustment
 
         var path = Path()
-        path.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width / 2, startAngle: modifiedStart, endAngle: modifiedEnd, clockwise: !clockwise)
+        /// - Note: The amount parameter being passed in should be applied to all edges, which in the case of arcs means we should use it to reduce our draw radius. So, change the addArc() call inside path(in:)
+        path.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width / 2 - insetAmount, startAngle: modifiedStart, endAngle: modifiedEnd, clockwise: !clockwise)
+//        path.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width / 2, startAngle: modifiedStart, endAngle: modifiedEnd, clockwise: !clockwise)
 
         return path
     }
