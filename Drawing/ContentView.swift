@@ -9,6 +9,47 @@
 import SwiftUI
 
 /**
+ ## ImagePaint
+  unless the image is the exact right size, you have very little control over how it should look.
+
+ To resolve the same image as a border won’t work, SwiftUI gives us a dedicated type that wraps images in a way that we have complete control over how they should be rendered, which in turn means we can use them for borders and fills without problem.
+ 
+  ImagePaint is created using one to three parameters. At the very least you need to give it an Image to work with as its first parameter, but you can also provide a rectangle within that image to use as the source of your drawing specified in the range of 0 to 1 (the second parameter), and a scale for that image (the third parameter). Those second and third parameters have sensible default values of “the whole image” and “100% scale”, so you can sometimes ignore them.
+ */
+struct ContentView: View {
+    /// - Note: SwiftUI relies heavily on protocols, which can be a bit confusing when working with drawing. For example, we can use Color as a view, but it also conforms to ShapeStyle – a different protocol used for fills, strokes, and borders.
+    var body: some View {
+
+        VStack {
+            /**
+             It’s worth adding that ImagePaint can be used for view backgrounds and also shape strokes. For example, we could create a capsule with our example image tiled as its stroke
+             
+            - Note: ImagePaint will automatically keep tiling its image until it has filled its area – it can work with backgrounds, strokes, borders, and fills of any size.
+             */
+            Capsule()
+                .strokeBorder(ImagePaint(image: Image("logo"), scale: 0.1), lineWidth: 20)
+                .frame(width: 300, height: 200)
+            
+            Text("Hello World")
+                .frame(width: 300, height: 300)
+                .border(Color.red, width: 30)
+                /**
+                 - Note: If you want to try using the sourceRect parameter, make sure you pass in a CGRect of relative sizes and positions: 0 means “start” and 1 means “end”. For example, this will show the entire width of our example image, but only the middle half
+                 */
+                .border(ImagePaint(image: Image("logo"), sourceRect: CGRect(x: 0, y: 0.25, width: 1, height: 0.5), scale: 0.1), width: 30)
+            /// - Note: we could render an example image using a scale of 0.2, which means it’s shown at 1/5th the normal size
+            //        .border(ImagePaint(image: Image("logo"), scale: 0.2), width: 30)
+            /// - Note: we can use an image for the background, But using the same image as a border won’t work
+            //        .border(Image("logo"), width: 30)
+            //        .background(Image("logo"))
+            //        .background(Color.red)
+        }
+    }
+    
+}
+
+
+/**
  ## CGAffineTransform
  how a path or view should be rotated, scaled, or sheared
  ## even-odd fills
@@ -31,37 +72,37 @@ import SwiftUI
  - Ranges such as 1...5 are great if you want to count through numbers one a time, but if you want to count in 2s, or in our case count in “pi/8”s, you should use **stride(from:to:by:)** instead.
  */
 
-struct ContentView: View {
-
-    @State private var petalOffset = -20.0
-    @State private var petalWidth = 100.0
-
-    var body: some View {
-        VStack {
-            Flower(petalOffset: petalOffset, petalWidth: petalWidth)
-            /**
-             - Note: If we fill our path using a solid color, we get a fairly unimpressive result.
-               - If a path has no overlaps it will be filled.
-               - If another path overlaps it, the overlapping part won’t be filled.
-               - If a third path overlaps the previous two, then it will be filled.
-               - …and so on.
-             Only the parts that actually overlap are affected by this rule, and it creates some remarkably beautiful results. Even better, Swift UI makes it trivial to use, because whenever we call fill() on a shape we can pass a FillStyle struct that asks for the even-odd rule to be enabled.
-             */
-             .fill(Color.red, style: FillStyle(eoFill: true))
-            /// - Note: But as an alternative, we can fill the shape using the even-odd rule, which decides whether part of a path should be colored depending on the overlaps it contains.
-//            .fill(Color.red)
-//            .stroke(Color.red, lineWidth: 1)
-
-            Text("Offset")
-            Slider(value: $petalOffset, in: -40...40)
-                .padding([.horizontal, .bottom])
-
-            Text("Width")
-            Slider(value: $petalWidth, in: 0...100)
-                .padding(.horizontal)
-        }
-    }
-}
+//struct ContentView: View {
+//
+//    @State private var petalOffset = -20.0
+//    @State private var petalWidth = 100.0
+//
+//    var body: some View {
+//        VStack {
+//            Flower(petalOffset: petalOffset, petalWidth: petalWidth)
+//            /**
+//             - Note: If we fill our path using a solid color, we get a fairly unimpressive result.
+//               - If a path has no overlaps it will be filled.
+//               - If another path overlaps it, the overlapping part won’t be filled.
+//               - If a third path overlaps the previous two, then it will be filled.
+//               - …and so on.
+//             Only the parts that actually overlap are affected by this rule, and it creates some remarkably beautiful results. Even better, Swift UI makes it trivial to use, because whenever we call fill() on a shape we can pass a FillStyle struct that asks for the even-odd rule to be enabled.
+//             */
+//             .fill(Color.red, style: FillStyle(eoFill: true))
+//            /// - Note: But as an alternative, we can fill the shape using the even-odd rule, which decides whether part of a path should be colored depending on the overlaps it contains.
+////            .fill(Color.red)
+////            .stroke(Color.red, lineWidth: 1)
+//
+//            Text("Offset")
+//            Slider(value: $petalOffset, in: -40...40)
+//                .padding([.horizontal, .bottom])
+//
+//            Text("Width")
+//            Slider(value: $petalWidth, in: 0...100)
+//                .padding(.horizontal)
+//        }
+//    }
+//}
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
